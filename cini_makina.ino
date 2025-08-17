@@ -1,6 +1,7 @@
 #include <LiquidCrystal.h>
 #include <Encoder.h>
 #include <EEPROM.h>
+#include "degerler.h"
 
 LiquidCrystal lcd(16, 17, 23, 25, 27, 29);
 Encoder myEnc(31, 33);
@@ -42,6 +43,8 @@ int editIndex = 0;       // Düzenlenen öğe indexi
 void setup() {
   lcd.begin(20, 4);
   pinMode(BTN, INPUT_PULLUP);
+
+  degerleriEEPROMdanOku();
 
   sabit_logo();
   delay(2000);
