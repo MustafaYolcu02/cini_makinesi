@@ -1,35 +1,111 @@
+#include "degerler.h"
+
 
 bool encoderOkuma() {
-  long newPosition = myEnc.read() / 4;
+  long newPosition = myEnc.read() / 4; // Encoder hassasiyetini ayarlayın
+  
   if (newPosition != oldPosition) {
     if (editMode) {
-      editValue += (int)(newPosition - oldPosition);
-      if (editValue < 0) editValue = 0;
-      if (editValue > 1000) editValue = 1000;
+      // Edit modunda değer değiştirme
+      editValue += (newPosition > oldPosition) ? 1 : -1;
+      editValue = constrain(editValue, 0, 1000); // Değer aralığını sınırla
     } else {
-      oldPosition = newPosition;
-      menuIndex = newPosition % currentMenu->itemCount;
-      if (menuIndex < 0) menuIndex += currentMenu->itemCount;
-
-      if (menuIndex < topItemIndex) topItemIndex = menuIndex;
-      else if (menuIndex >= topItemIndex + 3) topItemIndex = menuIndex - 2;
+      // Menü gezinme modu
+      int direction = (newPosition > oldPosition) ? 1 : -1;
+      menuIndex += direction;
+      
+      // Menü indeksini sınırla
+      menuIndex = constrain(menuIndex, 0, currentMenu->itemCount - 1);
+      
+      // Görüntülenen öğeleri güncelle
+      if (menuIndex < topItemIndex) {
+        topItemIndex = menuIndex;
+      } else if (menuIndex >= topItemIndex + 3) {
+        topItemIndex = menuIndex - 2;
+      }
     }
+    
     oldPosition = newPosition;
     return true;
   }
   return false;
 }
 
-void butonOkuma(){
+void butonOkuma() {
   // Buton ile alt menüye girme veya geri
   if (digitalRead(BTN) == LOW) {
     const char* selectedItem = currentMenu->items[menuIndex];
 
     if (editMode) {
-      // Düzenlemeyi onayla
+      // Düzenlemeyi onayla ve EEPROM'a kaydet
       editMode = false;
+      
+      // Düzenlenen değeri ilgili değişkene ata ve EEPROM'a kaydet
+      if (currentMenu == &xEkseni) {
+        switch(editIndex) {
+          case 1: 
+            degerler.xHiz = editValue;
+            degeriEEPROMaYaz(X_HIZ_ADDR, editValue);
+            break;
+          case 2: 
+            degerler.xIvme = editValue;
+            degeriEEPROMaYaz(X_IVME_ADDR, editValue);
+            break;
+          case 3: 
+            degerler.xAdim = editValue;
+            degeriEEPROMaYaz(X_ADIM_ADDR, editValue);
+            break;
+        }
+      }
+      else if (currentMenu == &zEkseni) {
+        switch(editIndex) {
+          case 1: 
+            degerler.zHiz = editValue;
+            degeriEEPROMaYaz(Z_HIZ_ADDR, editValue);
+            break;
+          case 2: 
+            degerler.zIvme = editValue;
+            degeriEEPROMaYaz(Z_IVME_ADDR, editValue);
+            break;
+          case 3: 
+            degerler.zAdim = editValue;
+            degeriEEPROMaYaz(Z_ADIM_ADDR, editValue);
+            break;
+        }
+      }
+      else if (currentMenu == &komut) {
+        switch(editIndex) {
+          case 1: 
+            degerler.zInme = editValue;
+            degeriEEPROMaYaz(Z_INME_ADDR, editValue);
+            break;
+          case 2: 
+            degerler.zBekleme = editValue;
+            degeriEEPROMaYaz(Z_BEKLEME_ADDR, editValue);
+            break;
+          case 3: 
+            degerler.xCekme = editValue;
+            degeriEEPROMaYaz(X_CEKME_ADDR, editValue);
+            break;
+          case 4: 
+            degerler.xBekleme = editValue;
+            degeriEEPROMaYaz(X_BEKLEME_ADDR, editValue);
+            break;
+          case 5: 
+            degerler.zCikma = editValue;
+            degeriEEPROMaYaz(Z_CIKMA_ADDR, editValue);
+            break;
+        }
+      }
+      
       currentMenu = editMenu;
       topItemIndex = 0;
+      
+      // Kayıt onay mesajı göster
+      lcd.clear();
+      lcd.setCursor(0, 1);
+      lcd.print("Kaydedildi!");
+      delay(1000);
     }
     else {
       if (strcmp(selectedItem, "Geri") == 0) {
@@ -50,16 +126,46 @@ void butonOkuma(){
       else if (currentMenu == &start && strcmp(selectedItem, "Komut Ayarlari") == 0) {
         currentMenu = &komut;
       }
+      else if (currentMenu == &ayarlar && strcmp(selectedItem, "Reset Ayarlari") == 0) {
+        varsayilanDegerleriYukle();
+        lcd.clear();
+        lcd.setCursor((20 - String("Varsayilanlar").length()) / 2, 1); // Üst satır (1. satır)
+        lcd.print("Varsayilanlar");
+        lcd.setCursor((20 - String("Yuklendi").length()) / 2, 2);    // Alt satır (2. satır)
+        lcd.print("Yuklendi");
+        delay(2000);
+      }
       
       // Düzenleme modu için sayısal öğe seçildi
       else if ((currentMenu == &xEkseni || currentMenu == &zEkseni || currentMenu == &komut) && menuIndex > 0) {
         editMode = true;
         editMenu = currentMenu;
         editIndex = menuIndex;
-        // Başlangıç değerleri (örnek)
-        if (currentMenu == &xEkseni) editValue = 300;
-        else if (currentMenu == &zEkseni) editValue = 100;
-        else if (currentMenu == &komut) editValue = 50;
+        
+        // Başlangıç değerlerini EEPROM'dan al
+        if (currentMenu == &xEkseni) {
+          switch(menuIndex) {
+            case 1: editValue = degerler.xHiz; break;
+            case 2: editValue = degerler.xIvme; break;
+            case 3: editValue = degerler.xAdim; break;
+          }
+        }
+        else if (currentMenu == &zEkseni) {
+          switch(menuIndex) {
+            case 1: editValue = degerler.zHiz; break;
+            case 2: editValue = degerler.zIvme; break;
+            case 3: editValue = degerler.zAdim; break;
+          }
+        }
+        else if (currentMenu == &komut) {
+          switch(menuIndex) {
+            case 1: editValue = degerler.zInme; break;
+            case 2: editValue = degerler.zBekleme; break;
+            case 3: editValue = degerler.xCekme; break;
+            case 4: editValue = degerler.xBekleme; break;
+            case 5: editValue = degerler.zCikma; break;
+          }
+        }
       }
     }
     menuIndex = 0;
