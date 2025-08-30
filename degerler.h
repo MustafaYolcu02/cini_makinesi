@@ -1,3 +1,5 @@
+// degerler.h - Manuel kontrol için EEPROM adresleri eklendi
+// degerler.h - Updated with new parameters
 #ifndef DEGERLER_H
 #define DEGERLER_H
 
@@ -18,10 +20,18 @@
 
 // Komut Ayarları
 #define Z_INME_ADDR 24
-#define Z_BEKLEME_ADDR 28
-#define X_CEKME_ADDR 32
-#define X_BEKLEME_ADDR 36
-#define Z_CIKMA_ADDR 40
+#define Z_YAVASLAMA_MESAFE_ADDR 28
+#define Z_YAVASLAMA_HIZ_ADDR 32
+#define Z_BEKLEME_ADDR 36
+#define X_CEKME_ADDR 40
+#define X_CEKME_SURE_ADDR 44
+#define Z_PARK_ADDR 48
+#define X_PARK_ADDR 52
+#define ENCODER_ILERLEME_ADDR 56
+
+// Manuel Kontrol Stok Değerleri
+#define X_MANUEL_ADDR 60
+#define Z_MANUEL_ADDR 64
 
 // Yeni yapı ismi: Degerler
 struct Degerler {
@@ -32,10 +42,16 @@ struct Degerler {
   int zIvme;
   int zAdim;
   int zInme;
+  int zYavaslamaMesafe;
+  int zYavaslamaHiz;
   int zBekleme;
   int xCekme;
-  int xBekleme;
-  int zCikma;
+  int xCekmeSure;
+  int zPark;
+  int xPark;
+  int encoderIlerleme;
+  int xManuel;  // X ekseni stok değeri
+  int zManuel;  // Z ekseni stok değeri
 };
 
 extern Degerler degerler;  // Değişken adı da güncellendi
