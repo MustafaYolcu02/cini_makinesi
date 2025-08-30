@@ -1,5 +1,5 @@
+// menu.ino - Manuel Kontrol için düzeltilmiş versiyon
 #include "degerler.h"
-
 
 bool encoderOkuma() {
   long newPosition = myEnc.read() / 4; // Encoder hassasiyetini ayarlayın
@@ -8,7 +8,40 @@ bool encoderOkuma() {
     if (editMode) {
       // Edit modunda değer değiştirme
       editValue += (newPosition > oldPosition) ? 1 : -1;
-      editValue = constrain(editValue, 0, 1000); // Değer aralığını sınırla
+      
+      // Değer aralığını sınırla (farklı değerler için farklı sınırlar)
+      if (currentMenu == &start || currentMenu == &home || currentMenu == &manuelAyarlari || currentMenu == &manuelKontrol) {
+        
+        // Manuel Kontrol stok değerleri (X ve Z stok)
+        if (currentMenu == &manuelKontrol) {
+          if (editIndex == 1 || editIndex == 2) { // X veya Z stok değerleri
+            editValue = constrain(editValue, 0, 1000);
+          }
+        }
+        // Diğer menüler için sınırlamalar
+        else {
+          // Hız, ivme, adım, mesafe değerleri
+          if (editIndex >= 1 && editIndex <= 6) {
+            editValue = constrain(editValue, 1, 1000);
+          }
+          // Z yavaşlama hızı
+          else if (editIndex == 9) {
+            editValue = constrain(editValue, 1, 1000);
+          }
+          // Bekleme süreleri
+          else if (editIndex == 10 || editIndex == 12) {
+            editValue = constrain(editValue, 0, 10000);
+          }
+          // Park pozisyonları
+          else if (editIndex == 13 || editIndex == 14 || editIndex == 7 || editIndex == 8) {
+            editValue = constrain(editValue, 0, 1000);
+          }
+          // Encoder ilerleme mesafesi
+          else if (editIndex == 8 && currentMenu == &manuelAyarlari) {
+            editValue = constrain(editValue, 1, 100);
+          }
+        }
+      }
     } else {
       // Menü gezinme modu
       int direction = (newPosition > oldPosition) ? 1 : -1;
@@ -55,7 +88,7 @@ void butonOkuma() {
       editMode = false;
       
       // Düzenlenen değeri ilgili değişkene ata ve EEPROM'a kaydet
-      if (currentMenu == &xEkseni) {
+      if (currentMenu == &start) {
         switch(editIndex) {
           case 1: 
             degerler.xHiz = editValue;
@@ -69,45 +102,126 @@ void butonOkuma() {
             degerler.xAdim = editValue;
             degeriEEPROMaYaz(X_ADIM_ADDR, editValue);
             break;
-        }
-      }
-      else if (currentMenu == &zEkseni) {
-        switch(editIndex) {
-          case 1: 
+          case 4: 
             degerler.zHiz = editValue;
             degeriEEPROMaYaz(Z_HIZ_ADDR, editValue);
             break;
-          case 2: 
+          case 5: 
             degerler.zIvme = editValue;
             degeriEEPROMaYaz(Z_IVME_ADDR, editValue);
             break;
-          case 3: 
+          case 6: 
             degerler.zAdim = editValue;
             degeriEEPROMaYaz(Z_ADIM_ADDR, editValue);
             break;
-        }
-      }
-      else if (currentMenu == &komut) {
-        switch(editIndex) {
-          case 1: 
+          case 7: 
             degerler.zInme = editValue;
             degeriEEPROMaYaz(Z_INME_ADDR, editValue);
             break;
-          case 2: 
+          case 8: 
+            degerler.zYavaslamaMesafe = editValue;
+            degeriEEPROMaYaz(Z_YAVASLAMA_MESAFE_ADDR, editValue);
+            break;
+          case 9: 
+            degerler.zYavaslamaHiz = editValue;
+            degeriEEPROMaYaz(Z_YAVASLAMA_HIZ_ADDR, editValue);
+            break;
+          case 10: 
             degerler.zBekleme = editValue;
             degeriEEPROMaYaz(Z_BEKLEME_ADDR, editValue);
             break;
-          case 3: 
+          case 11: 
             degerler.xCekme = editValue;
             degeriEEPROMaYaz(X_CEKME_ADDR, editValue);
             break;
+          case 12: 
+            degerler.xCekmeSure = editValue;
+            degeriEEPROMaYaz(X_CEKME_SURE_ADDR, editValue);
+            break;
+          case 13: 
+            degerler.zPark = editValue;
+            degeriEEPROMaYaz(Z_PARK_ADDR, editValue);
+            break;
+        }
+      }
+      else if (currentMenu == &home) {
+        switch(editIndex) {
+          case 1: 
+            degerler.xAdim = editValue;
+            degeriEEPROMaYaz(X_ADIM_ADDR, editValue);
+            break;
+          case 2: 
+            degerler.xIvme = editValue;
+            degeriEEPROMaYaz(X_IVME_ADDR, editValue);
+            break;
+          case 3: 
+            degerler.xHiz = editValue;
+            degeriEEPROMaYaz(X_HIZ_ADDR, editValue);
+            break;
           case 4: 
-            degerler.xBekleme = editValue;
-            degeriEEPROMaYaz(X_BEKLEME_ADDR, editValue);
+            degerler.zAdim = editValue;
+            degeriEEPROMaYaz(Z_ADIM_ADDR, editValue);
             break;
           case 5: 
-            degerler.zCikma = editValue;
-            degeriEEPROMaYaz(Z_CIKMA_ADDR, editValue);
+            degerler.zIvme = editValue;
+            degeriEEPROMaYaz(Z_IVME_ADDR, editValue);
+            break;
+          case 6: 
+            degerler.zHiz = editValue;
+            degeriEEPROMaYaz(Z_HIZ_ADDR, editValue);
+            break;
+          case 7: 
+            degerler.xPark = editValue;
+            degeriEEPROMaYaz(X_PARK_ADDR, editValue);
+            break;
+          case 8: 
+            degerler.zPark = editValue;
+            degeriEEPROMaYaz(Z_PARK_ADDR, editValue);
+            break;
+        }
+      }
+      else if (currentMenu == &manuelAyarlari) {
+        switch(editIndex) {
+          case 1: 
+            degerler.xAdim = editValue;
+            degeriEEPROMaYaz(X_ADIM_ADDR, editValue);
+            break;
+          case 2: 
+            degerler.xIvme = editValue;
+            degeriEEPROMaYaz(X_IVME_ADDR, editValue);
+            break;
+          case 3: 
+            degerler.xHiz = editValue;
+            degeriEEPROMaYaz(X_HIZ_ADDR, editValue);
+            break;
+          case 4: 
+            degerler.zAdim = editValue;
+            degeriEEPROMaYaz(Z_ADIM_ADDR, editValue);
+            break;
+          case 5: 
+            degerler.zIvme = editValue;
+            degeriEEPROMaYaz(Z_IVME_ADDR, editValue);
+            break;
+          case 6: 
+            degerler.zHiz = editValue;
+            degeriEEPROMaYaz(Z_HIZ_ADDR, editValue);
+            break;
+          case 7: 
+            degerler.encoderIlerleme = editValue;
+            degeriEEPROMaYaz(ENCODER_ILERLEME_ADDR, editValue);
+            break;
+        }
+      }
+      // MANUEL KONTROL DÜZELTMESİ - HATA BURADA
+      else if (currentMenu == &manuelKontrol) {
+        switch(editIndex) {
+          case 1: 
+            degerler.xManuel = editValue;  // X stok değerini kaydet
+            degeriEEPROMaYaz(X_MANUEL_ADDR, editValue);
+            break;
+          case 2: 
+            degerler.zManuel = editValue;  // Z stok değerini kaydet
+            degeriEEPROMaYaz(Z_MANUEL_ADDR, editValue);
             break;
         }
       }
@@ -131,17 +245,47 @@ void butonOkuma() {
           currentMenu = &mainMenu;
         }
       } 
+      // FABRİKA AYARLARI ONAY MENÜSÜ
+      else if (currentMenu == &fabrikaOnay) {
+        if (strcmp(selectedItem, "Evet") == 0) {
+          varsayilanDegerleriYukle();
+          // Tüm değerleri EEPROM'a yaz
+          degeriEEPROMaYaz(X_HIZ_ADDR, degerler.xHiz);
+          degeriEEPROMaYaz(X_IVME_ADDR, degerler.xIvme);
+          degeriEEPROMaYaz(X_ADIM_ADDR, degerler.xAdim);
+          degeriEEPROMaYaz(Z_HIZ_ADDR, degerler.zHiz);
+          degeriEEPROMaYaz(Z_IVME_ADDR, degerler.zIvme);
+          degeriEEPROMaYaz(Z_ADIM_ADDR, degerler.zAdim);
+          degeriEEPROMaYaz(Z_INME_ADDR, degerler.zInme);
+          degeriEEPROMaYaz(Z_YAVASLAMA_MESAFE_ADDR, degerler.zYavaslamaMesafe);
+          degeriEEPROMaYaz(Z_YAVASLAMA_HIZ_ADDR, degerler.zYavaslamaHiz);
+          degeriEEPROMaYaz(Z_BEKLEME_ADDR, degerler.zBekleme);
+          degeriEEPROMaYaz(X_CEKME_ADDR, degerler.xCekme);
+          degeriEEPROMaYaz(X_CEKME_SURE_ADDR, degerler.xCekmeSure);
+          degeriEEPROMaYaz(Z_PARK_ADDR, degerler.zPark);
+          degeriEEPROMaYaz(X_PARK_ADDR, degerler.xPark);
+          degeriEEPROMaYaz(ENCODER_ILERLEME_ADDR, degerler.encoderIlerleme);
+          degeriEEPROMaYaz(X_MANUEL_ADDR, degerler.xManuel);  // Manuel değerleri de kaydet
+          degeriEEPROMaYaz(Z_MANUEL_ADDR, degerler.zManuel);
+          
+          lcd.clear();
+          lcd.setCursor((20 - String("Fabrika Ayarlari").length()) / 2, 1);
+          lcd.print("Fabrika Ayarlari");
+          lcd.setCursor((20 - String("Yuklendi").length()) / 2, 2);
+          lcd.print("Yuklendi");
+          delay(2000);
+        }
+        // "Hayır" veya "Geri" seçeneği
+        currentMenu = previousMenuBeforeFabrika;
+        previousMenuBeforeFabrika = NULL;
+      }
       // ANA MENÜ SEÇENEKLERİ
       else if (currentMenu == &mainMenu) {
         if (strcmp(selectedItem, "Ayarlar") == 0) {
           currentMenu = &ayarlar;
         }
         else if (strcmp(selectedItem, "Manuel Kontrol") == 0) {
-          // Manuel kontrol menüsüne git (eğer varsa)
-          lcd.clear();
-          lcd.setCursor(0, 1);
-          lcd.print("Manuel Mod Aciladi");
-          delay(1000);
+          currentMenu = &manuelKontrol;
         }
       }
       // AYARLAR MENÜSÜ SEÇENEKLERİ
@@ -149,57 +293,93 @@ void butonOkuma() {
         if (strcmp(selectedItem, "Start Ayarlari") == 0) {
           currentMenu = &start;
         }
-        else if (strcmp(selectedItem, "Reset Ayarlari") == 0) {
-          varsayilanDegerleriYukle();
-          lcd.clear();
-          lcd.setCursor((20 - String("Varsayilanlar").length()) / 2, 1);
-          lcd.print("Varsayilanlar");
-          lcd.setCursor((20 - String("Yuklendi").length()) / 2, 2);
-          lcd.print("Yuklendi");
-          delay(2000);
+        else if (strcmp(selectedItem, "Home Ayarlari") == 0) {
+          currentMenu = &home;
+        }
+        else if (strcmp(selectedItem, "Manuel Ayarlari") == 0) {
+          currentMenu = &manuelAyarlari;
         }
       }
-      // START AYARLARI SEÇENEKLERİ
-      else if (currentMenu == &start) {
-        if (strcmp(selectedItem, "X Ekseni Ayarlari") == 0) {
-          currentMenu = &xEkseni;
+      // START, HOME VE MANUEL AYARLARI MENÜLERİNDE FABRİKA AYARLARI SEÇENEĞİ
+      else if ((currentMenu == &start || currentMenu == &home || currentMenu == &manuelAyarlari) && 
+               strcmp(selectedItem, "Fabrika Ayarlarina Don") == 0) {
+        previousMenuBeforeFabrika = currentMenu;
+        currentMenu = &fabrikaOnay;
+        fabrikaOnay.parent = currentMenu; // Geçici olarak parent'ı ayarla
+      }
+      // MANUEL KONTROL MENÜSÜ SEÇENEKLERİ
+      else if (currentMenu == &manuelKontrol) {
+        if (strcmp(selectedItem, "X Ekseni Hareketi") == 0) {
+          // X ekseni stok değerini düzenleme moduna geç
+          editMode = true;
+          editMenu = currentMenu;
+          editIndex = 1;
+          editValue = degerler.xManuel;  // Doğru değişken
         }
-        else if (strcmp(selectedItem, "Z Ekseni Ayarlari") == 0) {
-          currentMenu = &zEkseni;
-        }
-        else if (strcmp(selectedItem, "Komut Ayarlari") == 0) {
-          currentMenu = &komut;
+        else if (strcmp(selectedItem, "Z Ekseni Hareketi") == 0) {
+          // Z ekseni stok değerini düzenleme moduna geç
+          editMode = true;
+          editMenu = currentMenu;
+          editIndex = 2;
+          editValue = degerler.zManuel;  // Doğru değişken
         }
       }
       
       // Düzenleme modu için sayısal öğe seçildi
-      else if ((currentMenu == &xEkseni || currentMenu == &zEkseni || currentMenu == &komut) && menuIndex > 0) {
-        editMode = true;
-        editMenu = currentMenu;
-        editIndex = menuIndex;
-        
-        // Başlangıç değerlerini EEPROM'dan al
-        if (currentMenu == &xEkseni) {
-          switch(menuIndex) {
-            case 1: editValue = degerler.xHiz; break;
-            case 2: editValue = degerler.xIvme; break;
-            case 3: editValue = degerler.xAdim; break;
+      else if ((currentMenu == &start || currentMenu == &home || currentMenu == &manuelAyarlari || currentMenu == &manuelKontrol) && menuIndex > 0) {
+        // Fabrika ayarları öğesi düzenlenemez
+        if (strcmp(selectedItem, "Fabrika Ayarlarina Don") != 0) {
+          editMode = true;
+          editMenu = currentMenu;
+          editIndex = menuIndex;
+          
+          // Başlangıç değerlerini EEPROM'dan al
+          if (currentMenu == &start) {
+            switch(menuIndex) {
+              case 1: editValue = degerler.xHiz; break;
+              case 2: editValue = degerler.xIvme; break;
+              case 3: editValue = degerler.xAdim; break;
+              case 4: editValue = degerler.zHiz; break;
+              case 5: editValue = degerler.zIvme; break;
+              case 6: editValue = degerler.zAdim; break;
+              case 7: editValue = degerler.zInme; break;
+              case 8: editValue = degerler.zYavaslamaMesafe; break;
+              case 9: editValue = degerler.zYavaslamaHiz; break;
+              case 10: editValue = degerler.zBekleme; break;
+              case 11: editValue = degerler.xCekme; break;
+              case 12: editValue = degerler.xCekmeSure; break;
+              case 13: editValue = degerler.zPark; break;
+            }
           }
-        }
-        else if (currentMenu == &zEkseni) {
-          switch(menuIndex) {
-            case 1: editValue = degerler.zHiz; break;
-            case 2: editValue = degerler.zIvme; break;
-            case 3: editValue = degerler.zAdim; break;
+          else if (currentMenu == &home) {
+            switch(menuIndex) {
+              case 1: editValue = degerler.xAdim; break;
+              case 2: editValue = degerler.xIvme; break;
+              case 3: editValue = degerler.xHiz; break;
+              case 4: editValue = degerler.zAdim; break;
+              case 5: editValue = degerler.zIvme; break;
+              case 6: editValue = degerler.zHiz; break;
+              case 7: editValue = degerler.xPark; break;
+              case 8: editValue = degerler.zPark; break;
+            }
           }
-        }
-        else if (currentMenu == &komut) {
-          switch(menuIndex) {
-            case 1: editValue = degerler.zInme; break;
-            case 2: editValue = degerler.zBekleme; break;
-            case 3: editValue = degerler.xCekme; break;
-            case 4: editValue = degerler.xBekleme; break;
-            case 5: editValue = degerler.zCikma; break;
+          else if (currentMenu == &manuelAyarlari) {
+            switch(menuIndex) {
+              case 1: editValue = degerler.xAdim; break;
+              case 2: editValue = degerler.xIvme; break;
+              case 3: editValue = degerler.xHiz; break;
+              case 4: editValue = degerler.zAdim; break;
+              case 5: editValue = degerler.zIvme; break;
+              case 6: editValue = degerler.zHiz; break;
+              case 7: editValue = degerler.encoderIlerleme; break;
+            }
+          }
+          // MANUEL KONTROL DÜZELTMESİ - HATA BURADA
+          else if (currentMenu == &manuelKontrol) {
+            switch(menuIndex) {
+              case 1: editValue = degerler.xManuel; break;  // Doğru değişken
+              case 2: editValue = degerler.zManuel; break;  // Doğru değişken
+            }
           }
         }
       }
@@ -211,7 +391,6 @@ void butonOkuma() {
     delay(300); // debounce
   }
 }
-
 
 // Menü gösterme fonksiyonu
 void displayMenu() {
