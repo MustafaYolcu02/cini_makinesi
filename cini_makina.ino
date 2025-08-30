@@ -1,3 +1,4 @@
+// cini_makina.ino - Manuel Kontrol için stok değişkenleri eklendi
 #include <LiquidCrystal.h>
 #include <Encoder.h>
 #include <EEPROM.h>
@@ -14,19 +15,44 @@ struct Menu {
   Menu* parent;        // Bir üst menü
 };
 
+// Ana Menu Items
 const char* anaMenuItems[] = {"Geri", "Ayarlar", "Manuel Kontrol"};
-const char* ayarlarItems[] = {"Geri", "Start Ayarlari", "Reset Ayarlari"};
-const char* startItems[]   = {"Geri", "X Ekseni Ayarlari", "Z Ekseni Ayarlari", "Komut Ayarlari"};
-const char* xEkseniItems[] = {"Geri", "X Ekseni Hiz", "X Ekseni Ivme", "X Ekseni Adim"};
-const char* zEkseniItems[] = {"Geri", "Z Ekseni Hiz", "Z Ekseni Ivme", "Z Ekseni Adim"};
-const char* komutItems[]   = {"Geri", "Z Inme Mesafesi", "Z Bekleme Mesafesi", "X Cekme Mesafesi", "X Bekleme Zamani", "Z Cikma Mesafesi"};
 
-Menu mainMenu   = {"Ana Menu", anaMenuItems, 3, NULL}; // 3 öğe oldu
-Menu ayarlar    = {"Ayarlar", ayarlarItems, 3, &mainMenu}; // Ana menü parent olacak
-Menu start      = {"Start Ayarlari", startItems, 4, &ayarlar};
-Menu xEkseni    = {"X Ekseni Ayarlari", xEkseniItems, 4, &start};
-Menu zEkseni    = {"Z Ekseni Ayarlari", zEkseniItems, 4, &start};
-Menu komut      = {"Komut Ayarlari", komutItems, 6, &start};
+// Ayarlar Menu Items
+const char* ayarlarItems[] = {"Geri", "Start Ayarlari", "Home Ayarlari", "Manuel Ayarlari"};
+
+// Start Ayarlari Items
+const char* startItems[]   = {"Geri", "X Ekseni Hiz", "X Ekseni Ivme", "X Ekseni Adim", 
+                              "Z Ekseni Hiz", "Z Ekseni Ivme", "Z Ekseni Adim",
+                              "Z Inme Mesafesi", "Z Yavaslama Mesafesi", "Z Yavaslama Hizi",
+                              "Z Bekleme Suresi", "X Cekme Mesafesi", "X Cekme Suresi",
+                              "Z Park Pozisyonu", "Fabrika Ayarlarina Don"};
+
+// Home Ayarlari Items
+const char* homeItems[]   = {"Geri", "X Ekseni Adim", "X Ekseni Ivme", "X Ekseni Hiz",
+                             "Z Ekseni Adim", "Z Ekseni Ivme", "Z Ekseni Hiz",
+                             "X Ekseni Park Pozisyonu", "Z Ekseni Park Pozisyonu",
+                             "Fabrika Ayarlarina Don"};
+
+// Manuel Ayarlari Items
+const char* manuelItems[]   = {"Geri", "X Ekseni Adim", "X Ekseni Ivme", "X Ekseni Hiz",
+                               "Z Ekseni Adim", "Z Ekseni Ivme", "Z Ekseni Hiz",
+                               "Encoder Ilerleme Mesafesi", "Fabrika Ayarlarina Don"};
+
+// Manuel Kontrol Items
+const char* manuelKontrolItems[] = {"Geri", "X Ekseni Hareketi", "Z Ekseni Hareketi"};
+
+// Fabrika Ayarlari Onay Items
+const char* fabrikaOnayItems[] = {"Geri", "Evet", "Hayir"};
+
+// Menu Definitions
+Menu mainMenu         = {"Ana Menu", anaMenuItems, 3, NULL};
+Menu ayarlar          = {"Ayarlar", ayarlarItems, 4, &mainMenu};
+Menu start            = {"Start Ayarlari", startItems, 15, &ayarlar};
+Menu home             = {"Home Ayarlari", homeItems, 10, &ayarlar};
+Menu manuelAyarlari   = {"Manuel Ayarlari", manuelItems, 9, &ayarlar};
+Menu manuelKontrol    = {"Manuel Kontrol", manuelKontrolItems, 3, &mainMenu};
+Menu fabrikaOnay      = {"Fabrika Ayarlari", fabrikaOnayItems, 3, NULL}; // Parent will be set dynamically
 
 Menu* currentMenu = &mainMenu;
 int menuIndex = 0;
@@ -44,7 +70,7 @@ unsigned long lastUpdateTime = 0;
 const unsigned long UPDATE_INTERVAL = 1000; // 1 saniye
 
 bool infoScreenMode = true; // Bilgi ekranı modunda mıyız?
-
+Menu* previousMenuBeforeFabrika = NULL; // Fabrika onayından önceki menüyü saklamak için
 
 void setup() {
   lcd.begin(20, 4);
