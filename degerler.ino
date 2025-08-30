@@ -1,3 +1,5 @@
+// degerler.ino - Manuel kontrol için stok değerleri eklendi
+// degerler.ino - Updated with new default values
 #include "degerler.h"
 
 Degerler degerler;  // Yeni yapı ismi ve değişken adı
@@ -10,10 +12,16 @@ void varsayilanDegerleriYukle() {
   degerler.zIvme = 500;
   degerler.zAdim = 500;
   degerler.zInme = 200;
+  degerler.zYavaslamaMesafe = 100;
+  degerler.zYavaslamaHiz = 300;
   degerler.zBekleme = 2000;
   degerler.xCekme = 200;
-  degerler.xBekleme = 1000;
-  degerler.zCikma = 200;
+  degerler.xCekmeSure = 1000;
+  degerler.zPark = 300;
+  degerler.xPark = 500;
+  degerler.encoderIlerleme = 10;
+  degerler.xManuel = 300;  // X ekseni varsayılan stok değeri
+  degerler.zManuel = 500;  // Z ekseni varsayılan stok değeri
 }
 
 void degerleriEEPROMdanOku() {
@@ -25,10 +33,16 @@ void degerleriEEPROMdanOku() {
   EEPROM.get(Z_IVME_ADDR, degerler.zIvme);
   EEPROM.get(Z_ADIM_ADDR, degerler.zAdim);
   EEPROM.get(Z_INME_ADDR, degerler.zInme);
+  EEPROM.get(Z_YAVASLAMA_MESAFE_ADDR, degerler.zYavaslamaMesafe);
+  EEPROM.get(Z_YAVASLAMA_HIZ_ADDR, degerler.zYavaslamaHiz);
   EEPROM.get(Z_BEKLEME_ADDR, degerler.zBekleme);
   EEPROM.get(X_CEKME_ADDR, degerler.xCekme);
-  EEPROM.get(X_BEKLEME_ADDR, degerler.xBekleme);
-  EEPROM.get(Z_CIKMA_ADDR, degerler.zCikma);
+  EEPROM.get(X_CEKME_SURE_ADDR, degerler.xCekmeSure);
+  EEPROM.get(Z_PARK_ADDR, degerler.zPark);
+  EEPROM.get(X_PARK_ADDR, degerler.xPark);
+  EEPROM.get(ENCODER_ILERLEME_ADDR, degerler.encoderIlerleme);
+  EEPROM.get(X_MANUEL_ADDR, degerler.xManuel);
+  EEPROM.get(Z_MANUEL_ADDR, degerler.zManuel);
 
   // Eğer okunan değerler geçersizse varsayılanları yükle
   if (degerler.xHiz <= 0 || degerler.xHiz > 1000 ||
@@ -38,10 +52,16 @@ void degerleriEEPROMdanOku() {
       degerler.zIvme <= 0 || degerler.zIvme > 1000 ||
       degerler.zAdim <= 0 || degerler.zAdim > 1000 ||
       degerler.zInme <= 0 || degerler.zInme > 1000 ||
-      degerler.zBekleme <= 0 || degerler.zBekleme > 1000 ||
+      degerler.zYavaslamaMesafe <= 0 || degerler.zYavaslamaMesafe > 1000 ||
+      degerler.zYavaslamaHiz <= 0 || degerler.zYavaslamaHiz > 1000 ||
+      degerler.zBekleme <= 0 || degerler.zBekleme > 10000 ||
       degerler.xCekme <= 0 || degerler.xCekme > 1000 ||
-      degerler.xBekleme <= 0 || degerler.xBekleme > 1000 ||
-      degerler.zCikma <= 0 || degerler.zCikma > 1000) {
+      degerler.xCekmeSure <= 0 || degerler.xCekmeSure > 10000 ||
+      degerler.zPark < 0 || degerler.zPark > 1000 ||
+      degerler.xPark < 0 || degerler.xPark > 1000 ||
+      degerler.encoderIlerleme <= 0 || degerler.encoderIlerleme > 100 ||
+      degerler.xManuel < 0 || degerler.xManuel > 1000 ||
+      degerler.zManuel < 0 || degerler.zManuel > 1000) {
     varsayilanDegerleriYukle();
     // Varsayılan değerleri EEPROM'a yaz
     degeriEEPROMaYaz(X_HIZ_ADDR, degerler.xHiz);
@@ -51,10 +71,16 @@ void degerleriEEPROMdanOku() {
     degeriEEPROMaYaz(Z_IVME_ADDR, degerler.zIvme);
     degeriEEPROMaYaz(Z_ADIM_ADDR, degerler.zAdim);
     degeriEEPROMaYaz(Z_INME_ADDR, degerler.zInme);
+    degeriEEPROMaYaz(Z_YAVASLAMA_MESAFE_ADDR, degerler.zYavaslamaMesafe);
+    degeriEEPROMaYaz(Z_YAVASLAMA_HIZ_ADDR, degerler.zYavaslamaHiz);
     degeriEEPROMaYaz(Z_BEKLEME_ADDR, degerler.zBekleme);
     degeriEEPROMaYaz(X_CEKME_ADDR, degerler.xCekme);
-    degeriEEPROMaYaz(X_BEKLEME_ADDR, degerler.xBekleme);
-    degeriEEPROMaYaz(Z_CIKMA_ADDR, degerler.zCikma);
+    degeriEEPROMaYaz(X_CEKME_SURE_ADDR, degerler.xCekmeSure);
+    degeriEEPROMaYaz(Z_PARK_ADDR, degerler.zPark);
+    degeriEEPROMaYaz(X_PARK_ADDR, degerler.xPark);
+    degeriEEPROMaYaz(ENCODER_ILERLEME_ADDR, degerler.encoderIlerleme);
+    degeriEEPROMaYaz(X_MANUEL_ADDR, degerler.xManuel);
+    degeriEEPROMaYaz(Z_MANUEL_ADDR, degerler.zManuel);
   }
 }
 
