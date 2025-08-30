@@ -34,6 +34,20 @@ bool encoderOkuma() {
 void butonOkuma() {
   // Buton ile alt menüye girme veya geri
   if (digitalRead(BTN) == LOW) {
+    buttonPressCount++; // Buton basım sayacını artır
+    lastUpdateTime = millis(); // Ekranı güncelle
+    
+    // BİLGİ EKRANI ÖZEL DURUMU - Bilgi ekranındayken butona basınca ana menüye git
+    if (infoScreenMode) {
+      infoScreenMode = false; // Bilgi ekranı modundan çık
+      currentMenu = &mainMenu;
+      menuIndex = 0;
+      topItemIndex = 0;
+      displayMenu();
+      delay(300);
+      return;
+    }
+
     const char* selectedItem = currentMenu->items[menuIndex];
 
     if (editMode) {
@@ -109,31 +123,53 @@ void butonOkuma() {
     }
     else {
       if (strcmp(selectedItem, "Geri") == 0) {
-        if (currentMenu->parent != NULL) currentMenu = currentMenu->parent;
+        if (currentMenu->parent != NULL) {
+          currentMenu = currentMenu->parent;
+        } else {
+          // Ana menüden geriye basılırsa bilgi ekranına dön
+          infoScreenMode = true;
+          currentMenu = &mainMenu;
+        }
       } 
-      else if (currentMenu == &mainMenu && strcmp(selectedItem, "Ayarlar") == 0) {
-        currentMenu = &ayarlar;  // Ana menüden Ayarlar'a gir
+      // ANA MENÜ SEÇENEKLERİ
+      else if (currentMenu == &mainMenu) {
+        if (strcmp(selectedItem, "Ayarlar") == 0) {
+          currentMenu = &ayarlar;
+        }
+        else if (strcmp(selectedItem, "Manuel Kontrol") == 0) {
+          // Manuel kontrol menüsüne git (eğer varsa)
+          lcd.clear();
+          lcd.setCursor(0, 1);
+          lcd.print("Manuel Mod Aciladi");
+          delay(1000);
+        }
       }
-      else if (currentMenu == &ayarlar && strcmp(selectedItem, "Start Ayarlari") == 0) {
-        currentMenu = &start;
+      // AYARLAR MENÜSÜ SEÇENEKLERİ
+      else if (currentMenu == &ayarlar) {
+        if (strcmp(selectedItem, "Start Ayarlari") == 0) {
+          currentMenu = &start;
+        }
+        else if (strcmp(selectedItem, "Reset Ayarlari") == 0) {
+          varsayilanDegerleriYukle();
+          lcd.clear();
+          lcd.setCursor((20 - String("Varsayilanlar").length()) / 2, 1);
+          lcd.print("Varsayilanlar");
+          lcd.setCursor((20 - String("Yuklendi").length()) / 2, 2);
+          lcd.print("Yuklendi");
+          delay(2000);
+        }
       }
-      else if (currentMenu == &start && strcmp(selectedItem, "X Ekseni Ayarlari") == 0) {
-        currentMenu = &xEkseni;
-      }
-      else if (currentMenu == &start && strcmp(selectedItem, "Z Ekseni Ayarlari") == 0) {
-        currentMenu = &zEkseni;
-      }
-      else if (currentMenu == &start && strcmp(selectedItem, "Komut Ayarlari") == 0) {
-        currentMenu = &komut;
-      }
-      else if (currentMenu == &ayarlar && strcmp(selectedItem, "Reset Ayarlari") == 0) {
-        varsayilanDegerleriYukle();
-        lcd.clear();
-        lcd.setCursor((20 - String("Varsayilanlar").length()) / 2, 1); // Üst satır (1. satır)
-        lcd.print("Varsayilanlar");
-        lcd.setCursor((20 - String("Yuklendi").length()) / 2, 2);    // Alt satır (2. satır)
-        lcd.print("Yuklendi");
-        delay(2000);
+      // START AYARLARI SEÇENEKLERİ
+      else if (currentMenu == &start) {
+        if (strcmp(selectedItem, "X Ekseni Ayarlari") == 0) {
+          currentMenu = &xEkseni;
+        }
+        else if (strcmp(selectedItem, "Z Ekseni Ayarlari") == 0) {
+          currentMenu = &zEkseni;
+        }
+        else if (strcmp(selectedItem, "Komut Ayarlari") == 0) {
+          currentMenu = &komut;
+        }
       }
       
       // Düzenleme modu için sayısal öğe seçildi
@@ -168,6 +204,7 @@ void butonOkuma() {
         }
       }
     }
+    
     menuIndex = 0;
     topItemIndex = 0;
     displayMenu();
@@ -178,54 +215,104 @@ void butonOkuma() {
 
 // Menü gösterme fonksiyonu
 void displayMenu() {
-  // 1. satır başlık
-  lcd.setCursor(0, 0);
-  String title = String(currentMenu->title);
-  int titleLength = title.length();
-  int totalEquals = 20 - titleLength;
-  
-  if (totalEquals >= 2) {
-    int leftEquals = totalEquals / 2;
-    int rightEquals = totalEquals - leftEquals;
+  // Eğer bilgi ekranı modundaysak
+  if (infoScreenMode) {
+    // Tüm satırları temizle
+    for (int i = 0; i < 4; i++) {
+      lcd.setCursor(0, i);
+      lcd.print("                    "); // 20 boşluk
+    }
     
-    for (int i = 0; i < leftEquals; i++) lcd.print("=");
-    lcd.print(title);
-    for (int i = 0; i < rightEquals; i++) lcd.print("=");
-  }
-
-  // Edit modu aktifse
-  if (editMode && currentMenu == editMenu) {
-    // 2. satır: Seçilen öğenin adı
+    // 1. satır: ==AY MAKINA==
+    lcd.setCursor(0, 0);
+    lcd.print("====AY MAKINA====");
+    
+    // 2. satır: Ana Menü (tıklanabilir)
     lcd.setCursor(0, 1);
-    lcd.print("> ");
-    lcd.print(currentMenu->items[editIndex]);
-    for (int j = strlen(currentMenu->items[editIndex]) + 2; j < 20; j++) lcd.print(" ");
+    lcd.print("> Ana Menu");
     
-    // 3. satır: Değer (yanıp sönme efekti olmadan)
+    // 3. satır: Geçen süre
     lcd.setCursor(0, 2);
-    lcd.print("  ");
-    lcd.print(editValue);
-    lcd.print("  ");
-    for (int j = String(editValue).length() + 4; j < 20; j++) lcd.print(" ");
+    unsigned long totalSeconds = millis() / 1000;
+    unsigned long seconds = totalSeconds % 60;
+    unsigned long minutes = (totalSeconds / 60) % 60;
+    unsigned long hours = totalSeconds / 3600;
     
-    // 4. satırı temizle
+    lcd.print("Sure: ");
+    if (hours < 10) lcd.print("0");
+    lcd.print(hours);
+    lcd.print(":");
+    if (minutes < 10) lcd.print("0");
+    lcd.print(minutes);
+    lcd.print(":");
+    if (seconds < 10) lcd.print("0");
+    lcd.print(seconds);
+    
+    // 4. satır: Buton basım sayısı
     lcd.setCursor(0, 3);
-    lcd.print("                    ");
-  } 
+    lcd.print("Urun: ");
+    lcd.print(buttonPressCount);
+    lcd.print(" adet");
+    
+    // Kalan boşluğu temizle
+    int textLength = 7 + String(buttonPressCount).length() + 4;
+    for (int i = textLength; i < 20; i++) {
+      lcd.print(" ");
+    }
+  }
   else {
-    // Normal menü modu
-    for (int i = 0; i < 3; i++) {
-      int item = topItemIndex + i;
-      lcd.setCursor(0, i + 1);
+    // MENÜ MODU
+    lcd.clear();
+    
+    // 1. satır başlık
+    lcd.setCursor(0, 0);
+    String title = String(currentMenu->title);
+    int titleLength = title.length();
+    int totalEquals = 20 - titleLength;
+    
+    if (totalEquals >= 2) {
+      int leftEquals = totalEquals / 2;
+      int rightEquals = totalEquals - leftEquals;
       
-      if (item >= currentMenu->itemCount) {
-        lcd.print("                    ");
-      } else {
-        if (item == menuIndex) lcd.print(">");
-        else lcd.print(" ");
+      for (int i = 0; i < leftEquals; i++) lcd.print("=");
+      lcd.print(title);
+      for (int i = 0; i < rightEquals; i++) lcd.print("=");
+    }
+
+    // Edit modu aktifse
+    if (editMode && currentMenu == editMenu) {
+      // 2. satır: Seçilen öğenin adı
+      lcd.setCursor(0, 1);
+      lcd.print("> ");
+      lcd.print(currentMenu->items[editIndex]);
+      for (int j = strlen(currentMenu->items[editIndex]) + 2; j < 20; j++) lcd.print(" ");
+      
+      // 3. satır: Değer
+      lcd.setCursor(0, 2);
+      lcd.print("  ");
+      lcd.print(editValue);
+      lcd.print("  ");
+      for (int j = String(editValue).length() + 4; j < 20; j++) lcd.print(" ");
+      
+      // 4. satırı temizle
+      lcd.setCursor(0, 3);
+      lcd.print("                    ");
+    } 
+    else {
+      // Normal menü modu
+      for (int i = 0; i < 3; i++) {
+        int item = topItemIndex + i;
+        lcd.setCursor(0, i + 1);
         
-        lcd.print(currentMenu->items[item]);
-        for (int j = strlen(currentMenu->items[item]) + 1; j < 20; j++) lcd.print(" ");
+        if (item >= currentMenu->itemCount) {
+          lcd.print("                    ");
+        } else {
+          if (item == menuIndex) lcd.print(">");
+          else lcd.print(" ");
+          
+          lcd.print(currentMenu->items[item]);
+          for (int j = strlen(currentMenu->items[item]) + 1; j < 20; j++) lcd.print(" ");
+        }
       }
     }
   }
